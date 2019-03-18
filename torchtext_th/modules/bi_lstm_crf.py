@@ -29,6 +29,8 @@ class BiLSTMCRF(nn.Module):
         """
         super().__init__()
 
+        self.kwargs = kwargs
+
         self.embedding_dim: int = kwargs.get("embedding_dim")
         self.lstm_hidden_dim: int = kwargs.get("lstm_hidden_dim")
         self.p_drop: float = kwargs.get("p_drop", 0.5)
@@ -36,7 +38,7 @@ class BiLSTMCRF(nn.Module):
         vocab_count: int = kwargs.get("vocab_count")
         label_count: int = kwargs.get("label_count")
         lstm_hidden_dim: int = kwargs.get("lstm_hidden_dim")
-        lstm_num_layers: int = kwargs.get("lstm_num_layers")
+        lstm_num_layers: int = kwargs.get("lstm_num_layers", 1)
         constraints: int = kwargs.get("constraints", None)
 
         ######################

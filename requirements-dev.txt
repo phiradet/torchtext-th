@@ -4,3 +4,4 @@ pytorch-ignite==0.1.2
 tensorboardx==1.6
 pytest==4.3.1
 scikit-learn==0.20.3
+tqdm==4.31.1

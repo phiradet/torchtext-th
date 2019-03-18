@@ -75,11 +75,7 @@ class Tokenizer(object):
 
 
 def save_tokenizer(vocab: Vocab, seq_labeler: BiLSTMCRF, output_path: str):
-    model_conf = dict(
-        embedding_dim=seq_labeler.embedding_dim,
-        lstm_hidden_dim=seq_labeler.lstm_hidden_dim,
-        p_drop=seq_labeler.p_drop
-    )
+    model_conf = seq_labeler.kwargs
     tok_dict = dict(
         vocab=vocab.__dict__,
         model_weight=seq_labeler.state_dict(),
@@ -101,13 +97,9 @@ def get_tokenizer(artifact_path: str) -> Tokenizer:
     label = BMESLabel()
 
     model_conf = tok_info["model_conf"]
-    seq_labeler = BiLSTMCRF(vocab_count=len(vocab),
-                            label_count=len(label),
-                            embedding_dim=model_conf["embedding_dim"],
-                            lstm_hidden_dim=model_conf["lstm_hidden_dim"],
-                            constraints=None,
-                            p_drop=model_conf["p_drop"])
+    seq_labeler = BiLSTMCRF(**model_conf)
     seq_labeler.load_state_dict(tok_info['model_weight'])
+    seq_labeler = seq_labeler.eval()
     return Tokenizer(
         vocab=vocab,
         seq_labeler=seq_labeler,
