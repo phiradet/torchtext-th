@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union, Optional
 
 import torch
 import torch.nn as nn
@@ -98,10 +98,9 @@ class BiLSTMCRF(nn.Module):
 
     def _apply_lstm(self, x: torch.Tensor, seq_len: int,
                     x_length: torch.Tensor):
-        # lstm_out: (batch_size, seq_len, lstm_hidden_dim)
-        #    - lstm_out will be zero vectors at the padding position
-        #    - Check this link for the detail about pack_padded_sequence
-        #        - https://gist.github.com/HarshTrivedi/f4e7293e941b17d19058f6fb90ab0fec
+        # lstm_out will be zero vectors at the padding position
+        # Check this link for the detail about pack_padded_sequence
+        #     - https://gist.github.com/HarshTrivedi/f4e7293e941b17d19058f6fb90ab0fec
         packed_emb_x = pack_padded_sequence(x, x_length,
                                             batch_first=True)
         packed_lstm_out, _ = self.lstm(packed_emb_x)
@@ -147,6 +146,7 @@ class BiLSTMCRF(nn.Module):
         ###########
         # 2. LSTM #
         ###########
+        # lstm_out: (batch_size, seq_len, lstm_hidden_dim)
         lstm_out = self._apply_lstm(
             x=embedded_x,
             seq_len=seq_len,
@@ -186,21 +186,35 @@ class CNNBiLSTMCRF(BiLSTMCRF):
         super().__init__(**kwargs)
 
         self.p_drop_cnn = kwargs.get("p_drop_cnn", 0.2)
-        cnn_filter_sizes = kwargs.get("cnn_filter_sizes", [2, 3, 4])
-        cnn_filter_nums = kwargs.get("cnn_filter_nums", None)
+        cnn_filter_sizes = kwargs.get("cnn_filter_sizes", [1, 3, 5])
+        _cnn_filter_nums = kwargs.get("cnn_filter_nums", None)
 
         # keep the original dimension after CNN if cnn_filter_nums is None
-        if cnn_filter_nums is None:
-            cnn_filter_count = len(cnn_filter_sizes)
-            divided_size = self.embedding_dim // cnn_filter_count
-            cnn_filter_nums = [divided_size] * cnn_filter_count
-            cnn_filter_nums[0] += self.embedding_dim - sum(cnn_filter_nums)
+        cnn_filter_nums = self._resolve_cnn_filer_nums(
+            output_dim=_cnn_filter_nums,
+            cnn_filters_count=len(cnn_filter_sizes)
+        )
 
         self.conv_layers = self._init_convolution(
             filter_sizes=cnn_filter_sizes,
             in_channel=self.embedding_dim,
             out_channels=cnn_filter_nums
         )
+
+    def _resolve_cnn_filer_nums(self, output_dim: Optional[Union[int, List]],
+                                cnn_filters_count: int) -> List[int]:
+        # If no preference, keep same dimension
+        if output_dim is None:
+            output_dim = self.embedding_dim
+
+        # Equally partition `output_dim` to all filters
+        if isinstance(output_dim, int):
+            divided_size = self.embedding_dim // cnn_filters_count
+            cnn_filter_nums = [divided_size] * cnn_filters_count
+            cnn_filter_nums[0] += self.embedding_dim - sum(cnn_filter_nums)
+            return cnn_filter_nums
+        else:
+            return output_dim
 
     def _init_convolution(self, filter_sizes: List[int],
                           in_channel: int, out_channels: List[int]):
@@ -246,7 +260,7 @@ class CNNBiLSTMCRF(BiLSTMCRF):
             conv_out.append(conv_out_i)
 
         # output: (batch_size, seq_len, output_feature)
-        output = torch.cat(conv_out, dim=-1).permute(0, 2, 1)
+        output = torch.cat(conv_out, dim=1).permute(0, 2, 1)
         return output
 
     def forward(self,

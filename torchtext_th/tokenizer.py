@@ -74,7 +74,7 @@ class Tokenizer(object):
         )
 
 
-def save_tokenizer(vocab: Vocab, seq_labeler: BiLSTMCRF, output_path: str):
+def save_tokenizer(vocab: Vocab, seq_labeler: BiLSTMCRF, output_path: str) -> None:
     model_conf = seq_labeler.kwargs
     tok_dict = dict(
         vocab=vocab.__dict__,
