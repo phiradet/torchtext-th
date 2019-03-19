@@ -91,10 +91,12 @@ class BiLSTMCRF(nn.Module):
     def get_seq_mask(lengths: torch.Tensor):
         batch_size = lengths.numel()
         max_len = lengths.max()
+        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         return (torch.arange(0, max_len)
                 .type_as(lengths)
                 .repeat(batch_size, 1)
-                .lt(lengths.unsqueeze(1)))
+                .lt(lengths.unsqueeze(1))
+                .to(device))
 
     def _apply_lstm(self, x: torch.Tensor, seq_len: int,
                     x_length: torch.Tensor):
@@ -174,7 +176,8 @@ class BiLSTMCRF(nn.Module):
 
         output_dict = dict(
             emission_logit=emission_logit,
-            predicted_tags=predicted_tags
+            predicted_tags=predicted_tags,
+            mask=mask
         )
 
         return output_dict
@@ -315,7 +318,8 @@ class CNNBiLSTMCRF(BiLSTMCRF):
 
         output_dict = dict(
             emission_logit=emission_logit,
-            predicted_tags=predicted_tags
+            predicted_tags=predicted_tags,
+            mask=mask
         )
 
         return output_dict

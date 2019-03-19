@@ -50,7 +50,7 @@ class Trainer(object):
                                    val_data_loader: utils.DataLoader):
         iter_num = trainer_engine.state.iteration
         epoch = trainer_engine.state.epoch
-        if iter_num % 10 == 0:
+        if iter_num % 50 == 0:
             # Write evaluation loss
             evaluator.run(val_data_loader)
             metrics = evaluator.state.metrics
@@ -62,7 +62,7 @@ class Trainer(object):
     def _on_iteration_complete_save(self, trainer_engine: Engine,
                                     model_saver: ModelCheckpoint):
         iter_num = trainer_engine.state.iteration - 1
-        if iter_num % 50 == 0:
+        if iter_num % 500 == 0:
             to_save = {'model': self.model}
             model_saver(trainer_engine, to_save)
             print("Model checkpoint is created")
@@ -129,7 +129,8 @@ class Trainer(object):
 
         input_dict = dict(
             x=x,
-            x_length=sorted_len
+            x_length=sorted_len,
+            is_training=True
         )
         return input_dict, y
 

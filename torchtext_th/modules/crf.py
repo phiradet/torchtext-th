@@ -433,7 +433,8 @@ class ConditionalRandomField(torch.nn.Module):
         """
         # pylint: disable=arguments-differ
         if mask is None:
-            mask = torch.ones(*tags.size(), dtype=torch.long)
+            device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+            mask = torch.ones(*tags.size(), dtype=torch.long).to(device)
 
         # log Z(x)
         normalize_term = self._input_likelihood(emission_logits, mask)
